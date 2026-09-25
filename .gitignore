@@ -1,0 +1,27 @@
+# NagrikAI — ignore secrets and generated files
+
+# Secrets
+.env
+
+# Spec (not for public repo)
+NagrikAI-spec.md
+
+# Database
+*.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
