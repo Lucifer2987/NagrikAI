@@ -1,4 +1,11 @@
-from backend.services import complaint_service, jev_rlcd_service, geocoding_service, duplicate_service, analytics_service
+from backend.services import (
+    complaint_service,
+    jev_rlcd_service,
+    geocoding_service,
+    duplicate_service,
+    analytics_service,
+    ocr_service,
+)
 
 __all__ = [
     "complaint_service",
@@ -6,4 +13,5 @@ __all__ = [
     "geocoding_service",
     "duplicate_service",
     "analytics_service",
+    "ocr_service",
 ]

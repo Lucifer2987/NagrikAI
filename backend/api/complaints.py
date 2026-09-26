@@ -1,13 +1,18 @@
+import logging
 from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.services import complaint_service, duplicate_service, analytics_service
+from backend.services.ocr_service import validate_image
 
 router = APIRouter(prefix="/api/complaints", tags=["complaints"])
+logger = logging.getLogger(__name__)
+
+VALID_SOURCES = {"social_media", "whatsapp", "grievance_portal", "manual"}
 
 
 class ComplaintCreate(BaseModel):
@@ -21,11 +26,10 @@ class StatusUpdate(BaseModel):
     status: str
 
 
-@router.post("/", summary="Submit and process a new complaint")
+@router.post("/", summary="Submit and process a new complaint (JSON)")
 def submit_complaint(payload: ComplaintCreate, db: Session = Depends(get_db)):
-    valid_sources = {"social_media", "whatsapp", "grievance_portal", "manual"}
-    if payload.source not in valid_sources:
-        raise HTTPException(status_code=400, detail=f"source must be one of {valid_sources}")
+    if payload.source not in VALID_SOURCES:
+        raise HTTPException(status_code=400, detail=f"source must be one of {VALID_SOURCES}")
 
     complaint = complaint_service.create_complaint(
         db=db,
@@ -34,6 +38,57 @@ def submit_complaint(payload: ComplaintCreate, db: Session = Depends(get_db)):
         address=payload.address,
         timestamp=payload.timestamp,
     )
+    return complaint
+
+
+@router.post("/with-image", summary="Submit a complaint with an optional image for OCR")
+async def submit_complaint_with_image(
+    complaint_text: str = Form(...),
+    source: str = Form(...),
+    address: Optional[str] = Form(None),
+    timestamp: Optional[datetime] = Form(None),
+    image: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db),
+):
+    if source not in VALID_SOURCES:
+        raise HTTPException(status_code=400, detail=f"source must be one of {VALID_SOURCES}")
+
+    if image is None:
+        # No image supplied — fall through to the standard text-only pipeline
+        complaint = complaint_service.create_complaint(
+            db=db,
+            complaint_text=complaint_text,
+            source=source,
+            address=address,
+            timestamp=timestamp,
+        )
+        return complaint
+
+    image_bytes = await image.read()
+
+    try:
+        validate_image(
+            filename=image.filename or "",
+            content_type=image.content_type or "",
+            size=len(image_bytes),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    try:
+        complaint = complaint_service.create_complaint_with_image(
+            db=db,
+            complaint_text=complaint_text,
+            source=source,
+            address=address,
+            timestamp=timestamp,
+            image_bytes=image_bytes,
+            image_filename=image.filename or "upload.jpg",
+        )
+    except Exception as exc:
+        logger.error("Complaint processing failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail="Complaint processing failed. Please try again.")
+
     return complaint
 
 

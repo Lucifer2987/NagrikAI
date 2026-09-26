@@ -9,6 +9,9 @@ NagrikAI-spec.md
 # Database
 *.db
 
+# Uploaded images
+uploads/
+
 # Python
 __pycache__/
 *.pyc

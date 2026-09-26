@@ -8,8 +8,10 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "easyocr>=1.7.2",
     "fastapi>=0.141.1",
     "python-dotenv>=1.2.3",
+    "python-multipart>=0.0.32",
     "sqlalchemy>=2.1.0",
     "typesafe-sdk>=0.7.1",
     "uvicorn>=0.54.0",
@@ -21,3 +23,9 @@ nagrikai = "nagrikai:main"
 [build-system]
 requires = ["uv_build>=0.12.7,<0.13.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+]

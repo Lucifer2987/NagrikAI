@@ -26,3 +26,7 @@ class Complaint(Base):
 
     needs_human_review = Column(Boolean, default=False)
     review_reason = Column(String(255), nullable=True)
+
+    image_path = Column(String(512), nullable=True)
+    ocr_text = Column(Text, nullable=True)
+    ocr_confidence = Column(Float, nullable=True)  # mean confidence of recognised words (0–100)
